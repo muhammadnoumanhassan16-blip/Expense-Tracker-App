@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ledger — Expense Tracker</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header class="topbar">
+  <div class="topbar-inner">
+    <div class="logo">
+      <span class="logo-mark" aria-hidden="true">L</span>
+      <span class="logo-name">Ledger</span>
+    </div>
+    <span class="topbar-date" id="todayDate"></span>
+  </div>
+</header>
+
+<main class="shell">
+
+  <div class="page-head">
+    <div>
+      <h1>Transactions</h1>
+      <p class="page-sub">Track income and expenses and see where your money goes.</p>
+    </div>
+    <button type="button" class="btn btn-primary" id="openAddBtn">
+      <svg viewBox="0 0 16 16" class="icon" aria-hidden="true"><path d="M8 2.5v11M2.5 8h11" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+      Add transaction
+    </button>
+  </div>
+
+  <!-- Summary -->
+  <section class="summary-bar" aria-label="Account summary">
+    <div class="summary-item">
+      <span class="summary-label">Balance</span>
+      <span class="summary-value" id="statBalance">Rs. 0</span>
+    </div>
+    <div class="summary-item">
+      <span class="summary-label">Income</span>
+      <span class="summary-value summary-value--income" id="statIncome">Rs. 0</span>
+    </div>
+    <div class="summary-item">
+      <span class="summary-label">Expenses</span>
+      <span class="summary-value summary-value--expense" id="statExpense">Rs. 0</span>
+    </div>
+    <div class="summary-item summary-item--last">
+      <span class="summary-label">Transactions</span>
+      <span class="summary-value" id="statCount">0</span>
+    </div>
+  </section>
+
+  <!-- Toolbar -->
+  <section class="toolbar" aria-label="Search and filters">
+    <div class="search-field">
+      <svg viewBox="0 0 16 16" class="icon icon-muted" aria-hidden="true"><circle cx="7" cy="7" r="4.5" stroke="currentColor" stroke-width="1.4" fill="none"/><path d="M13 13l-3-3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+      <input type="search" id="searchInput" placeholder="Search by description, category or note" aria-label="Search transactions">
+    </div>
+
+    <div class="toolbar-filters">
+      <select id="filterType" aria-label="Filter by type">
+        <option value="all">All types</option>
+        <option value="income">Income</option>
+        <option value="expense">Expense</option>
+      </select>
+      <select id="filterCategory" aria-label="Filter by category">
+        <option value="all">All categories</option>
+        <option>Food</option>
+        <option>Transport</option>
+        <option>Shopping</option>
+        <option>Bills</option>
+        <option>Entertainment</option>
+        <option>Health</option>
+        <option>Education</option>
+        <option>Salary</option>
+        <option>Freelance</option>
+        <option>Other</option>
+      </select>
+      <select id="filterDate" aria-label="Filter by date">
+        <option value="all">All dates</option>
+        <option value="today">Today</option>
+        <option value="week">This week</option>
+        <option value="month">This month</option>
+      </select>
+      <select id="sortBy" aria-label="Sort transactions">
+        <option value="newest">Newest first</option>
+        <option value="oldest">Oldest first</option>
+        <option value="highest">Highest amount</option>
+        <option value="lowest">Lowest amount</option>
+      </select>
+    </div>
+  </section>
+
+  <!-- Content -->
+  <div class="content-grid">
+
+    <section class="panel panel-main" aria-label="Transaction list">
+      <div class="table-wrap">
+        <table class="tx-table">
+          <thead>
+            <tr>
+              <th scope="col">Description</th>
+              <th scope="col">Category</th>
+              <th scope="col">Date</th>
+              <th scope="col" class="col-amount">Amount</th>
+              <th scope="col" class="col-actions"><span class="sr-only">Actions</span></th>
+            </tr>
+          </thead>
+          <tbody id="txList"></tbody>
+        </table>
+      </div>
+
+      <div id="emptyState" class="empty-state" hidden>
+        <svg viewBox="0 0 48 48" class="empty-icon" aria-hidden="true">
+          <rect x="8" y="12" width="32" height="26" rx="3" stroke="currentColor" stroke-width="1.6" fill="none"/>
+          <path d="M8 19h32" stroke="currentColor" stroke-width="1.6"/>
+          <path d="M16 27h10" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+        </svg>
+        <p class="empty-title" id="emptyTitle">No transactions yet</p>
+        <p class="empty-body" id="emptyBody">Start tracking your income and expenses by adding your first transaction.</p>
+        <button type="button" class="btn btn-secondary" id="emptyAddBtn" hidden>Add transaction</button>
+      </div>
+    </section>
+
+    <aside class="panel panel-aside" aria-label="Expense breakdown">
+      <h2 class="panel-aside-title">Expense breakdown</h2>
+      <div id="breakdownList" class="breakdown-list"></div>
+      <p class="breakdown-empty" id="breakdownEmpty">No expenses recorded yet.</p>
+
+      <div class="aside-divider" role="separator"></div>
+
+      <button type="button" class="btn btn-destructive-text" id="clearAllBtn">Clear all transactions</button>
+    </aside>
+
+  </div>
+</main>
+
+<!-- Toast -->
+<div id="toast" class="toast" role="status" aria-live="polite" hidden>
+  <span id="toastMessage"></span>
+</div>
+
+<!-- Add / Edit Transaction Modal -->
+<div id="txModalOverlay" class="modal-overlay" hidden>
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="txModalTitle">
+    <div class="modal-head">
+      <h2 id="txModalTitle">Add transaction</h2>
+      <button type="button" class="modal-close" id="txModalClose" aria-label="Close dialog">
+        <svg viewBox="0 0 16 16" class="icon" aria-hidden="true"><path d="M3 3l10 10M13 3L3 13" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+      </button>
+    </div>
+
+    <form id="txForm" novalidate>
+      <input type="hidden" id="editId" value="">
+
+      <div class="field">
+        <label for="description">Description</label>
+        <input type="text" id="description" placeholder="e.g. Grocery shopping" autocomplete="off">
+        <span class="field-help" id="err-description">Enter a short description for this entry.</span>
+      </div>
+
+      <div class="field-row">
+        <div class="field">
+          <label for="amount">Amount (Rs.)</label>
+          <input type="number" id="amount" placeholder="0.00" min="0" step="0.01" inputmode="decimal">
+          <span class="field-help" id="err-amount">Enter an amount greater than 0.</span>
+        </div>
+        <div class="field">
+          <label for="date">Date</label>
+          <input type="date" id="date">
+          <span class="field-help" id="err-date">Select the date this occurred.</span>
+        </div>
+      </div>
+
+      <div class="field">
+        <span class="field-label-static">Type</span>
+        <div class="type-toggle" id="typeToggle" role="radiogroup" aria-label="Transaction type">
+          <button type="button" class="type-btn type-btn--income" data-type="income" role="radio" aria-checked="false">Income</button>
+          <button type="button" class="type-btn type-btn--expense" data-type="expense" role="radio" aria-checked="false">Expense</button>
+        </div>
+        <span class="field-help" id="err-type">Choose whether this is income or an expense.</span>
+      </div>
+
+      <div class="field">
+        <label for="category">Category</label>
+        <select id="category">
+          <option value="">Select category</option>
+          <option>Food</option>
+          <option>Transport</option>
+          <option>Shopping</option>
+          <option>Bills</option>
+          <option>Entertainment</option>
+          <option>Health</option>
+          <option>Education</option>
+          <option>Salary</option>
+          <option>Freelance</option>
+          <option>Other</option>
+        </select>
+        <span class="field-help" id="err-category">Pick the closest matching category.</span>
+      </div>
+
+      <div class="field">
+        <label for="note">Note <span class="field-optional">(optional)</span></label>
+        <textarea id="note" rows="2" placeholder="Additional details"></textarea>
+      </div>
+
+      <div class="modal-actions">
+        <button type="button" class="btn btn-secondary" id="cancelFormBtn">Cancel</button>
+        <button type="submit" class="btn btn-primary" id="submitBtn">Add transaction</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Confirm Modal (delete / clear all) -->
+<div id="confirmModal" class="modal-overlay" hidden>
+  <div class="modal modal-sm" role="alertdialog" aria-modal="true" aria-labelledby="modalTitle">
+    <h2 id="modalTitle">Delete transaction?</h2>
+    <p id="modalBody">This action cannot be undone.</p>
+    <div class="modal-actions">
+      <button type="button" class="btn btn-secondary" id="modalCancel">Cancel</button>
+      <button type="button" class="btn btn-destructive" id="modalConfirm">Delete</button>
+    </div>
+  </div>
+</div>
+
+<script src="script.js"></script>
+</body>
+</html>
